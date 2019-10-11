@@ -111,7 +111,66 @@ if ($_GET["id"] == "users") {
         array('db' => 'enabled', 'hide' => true),
         array('db' => 'exp_date', 'hide' => true),
     );
-} else if ($_GET["id"] == "reg_users") {
+  
+}else if ($_GET["id"] == "user_activity") {
+    $rRegisteredUsers = getRegisteredUsernames();
+    $rChannels = getChannels();
+    $rStreamingServers = getStreamingServers();
+
+    $rActivity = Array();
+    $result = $db->query("SELECT `user_id`, COUNT(`activity_id`) AS `count` FROM `user_activity_now` GROUP BY `user_id`;");
+    if (($result) && ($result->num_rows > 0)) {
+        while ($row = $result->fetch_assoc()) {
+            $rActivity[$row["user_id"]] = intval($row["count"]);
+        }
+    }
+
+    $table = 'user_activity_now';
+    $get = $_GET["activity_id"];
+    $primaryKey = 'activity_id';
+    $extraWhere = "";
+    $columns = array(
+        array('db' => 'user_id', 'dt' => 0,
+            'formatter' => function( $d, $row ) {
+                return "<a href='./user.php?id=".$d."'>".getUser(intval($d))["username"]."</a>";
+            }
+        ),
+        array('db' => 'stream_id', 'dt' => 1,
+            'formatter' => function( $d, $row ) {
+                return "<a href='./stream.php?id=".$d."'>".getChannelsByID(intval($d))["stream_display_name"]."</a>";
+            }
+        ),
+        array('db' => 'server_id', 'dt' => 2,
+            'formatter' => function( $d, $row ) {
+                return "<a href='./server.php?id=".$d."'>".getStreamingServersByID(intval($d))["server_name"]."</a>";
+            }
+        ),
+        array('db' => 'user_ip', 'dt' => 3,
+            'formatter' => function( $d, $row ) {
+                if ($d) { return "<a target='_blank' href='https://www.ip-tracker.org/locator/ip-lookup.php?ip=".$d."'>".$d."</a>"; }
+            }
+        ),
+        #array('db' => 'stream_id', 'dt' => 4),
+        array('db' => 'user_id', 'dt' => 4,
+            'formatter' => function( $d, $row ) {
+                global $rActivity;
+                $max = getUser(intval($d))["max_connections"];
+                if ($max == 0) {
+                    $max = "&infin;";
+                }
+                return $rActivity[intval($d)]." / ".$max;
+            }
+        ),
+        array('db' => 'geoip_country_code', 'dt' => 5,
+            'formatter' => function( $d, $row ) {
+                
+                return "<img src='https://www.ip-tracker.org/images/ip-flags/".strtolower($d).".png'> (".$d.")</img>";
+            }
+        ),
+       
+    );
+  
+}else if ($_GET["id"] == "reg_users") {
     $rMemberGroups = getMemberGroups();
     
     $table = 'reg_users';
